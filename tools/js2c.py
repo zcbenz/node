@@ -119,9 +119,9 @@ def GetDefinition(var, source, step=30):
   return definition, len(code_points)
 
 
-def AddModule(filename, definitions, initializers):
+def AddModule(root, filename, definitions, initializers):
   code = ReadFile(filename)
-  name = NormalizeFileName(filename)
+  name = NormalizeFileName(root, filename)
   slug = SLUGGER_RE.sub('_', name)
   var = slug + '_raw'
   definition, size = GetDefinition(var, code)
@@ -129,7 +129,9 @@ def AddModule(filename, definitions, initializers):
   definitions.append(definition)
   initializers.append(initializer)
 
-def NormalizeFileName(filename):
+def NormalizeFileName(root, filename):
+  if root:
+    filename = os.path.relpath(filename, root)
   split = filename.split('/')
   if split[0] == 'deps':
     split = ['internal'] + split
@@ -140,15 +142,15 @@ def NormalizeFileName(filename):
   return os.path.splitext(filename)[0]
 
 
-def JS2C(source_files, target):
+def JS2C(root, source_files, target):
   # Build source code lines
   definitions = []
   initializers = []
 
   for filename in source_files['.js']:
-    AddModule(filename, definitions, initializers)
+    AddModule(root, filename, definitions, initializers)
   for filename in source_files['.mjs']:
-    AddModule(filename, definitions, initializers)
+    AddModule(root, filename, definitions, initializers)
 
   config_def, config_size = handle_config_gypi(source_files['config.gypi'])
   definitions.append(config_def)
@@ -215,6 +217,10 @@ def main():
       '--directory',
       default=None,
       help='input file directory')
+  parser.add_argument(
+      '--root',
+      default=None,
+      help='root directory containing the sources')
   parser.add_argument('--verbose', action='store_true', help='output file')
   parser.add_argument('sources', nargs='*', help='input files')
   options = parser.parse_args()
@@ -231,9 +237,10 @@ def main():
   # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
   assert len(source_files) == 3
   # Currently config.gypi is the only `.gypi` file allowed
-  assert source_files['.gypi'] == ['config.gypi']
+  assert len(source_files['.gypi']) == 1
+  assert os.path.basename(source_files['.gypi'][0]) == 'config.gypi'
   source_files['config.gypi'] = source_files.pop('.gypi')[0]
-  JS2C(source_files, options.target)
+  JS2C(options.root, source_files, options.target)
 
 
 if __name__ == "__main__":
