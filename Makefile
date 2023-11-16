@@ -1227,15 +1227,10 @@ $(TARBALL)-headers: release-only
 		--tag=$(TAG) \
 		--release-urlbase=$(RELEASE_URLBASE) \
 		$(CONFIG_FLAGS) $(BUILD_RELEASE_FLAGS)
-	$(PYTHON) tools/install.py install --headers-only --dest-dir '$(TARNAME)' --prefix '$(PREFIX)'
-	find $(TARNAME)/ -type l | xargs $(RM)
-	tar -cf $(TARNAME)-headers.tar $(TARNAME)
-	$(RM) -r $(TARNAME)
-	gzip -c -f -9 $(TARNAME)-headers.tar > $(TARNAME)-headers.tar.gz
+	$(PYTHON) tools/create_headers_tarball.py --target '$(TARNAME)-headers.tar.gz' --prefix '/'
 ifeq ($(XZ), 1)
-	xz -c -f -$(XZ_COMPRESSION) $(TARNAME)-headers.tar > $(TARNAME)-headers.tar.xz
+	$(PYTHON) tools/create_headers_tarball.py --target '$(TARNAME)-headers.tar.xz' --prefix '/' --compression-level $(XZ_COMPRESSION)
 endif
-	$(RM) $(TARNAME)-headers.tar
 
 .PHONY: tar-headers
 tar-headers: $(TARBALL)-headers ## Build the node header tarball.
