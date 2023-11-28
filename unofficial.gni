@@ -130,6 +130,9 @@ template("node_gn_build") {
         "NODE_OPENSSL_SYSTEM_CERT_PATH=\"$node_openssl_system_ca_path\"",
       ]
     }
+    if (node_hook_child_process_fork != "") {
+      defines += [ "NODE_HOOK_CHILD_PROCESS_FORK=1" ]
+    }
   }
 
   gypi_values = exec_script("./tools/gypi_to_gn.py",
@@ -310,6 +313,13 @@ template("node_gn_build") {
              "--root", rebase_path("."),
              "lib", rebase_path("$target_gen_dir/config.gypi") ] +
            node_deps_files
+
+    if (node_hook_child_process_fork != "") {
+      inputs += [ node_hook_child_process_fork ]
+      args += [ "--custom-builtin",
+                "internal/hook/child_process_fork",
+                rebase_path(node_hook_child_process_fork) ]
+    }
   }
 
   executable("node_cctest") {

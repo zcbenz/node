@@ -5,6 +5,7 @@
     'v8_enable_pointer_compression%': 0,
     'v8_enable_31bit_smis_on_64bit_arch%': 0,
     'node_no_browser_globals%': 'false',
+    'node_hook_child_process_fork': '',
     'node_snapshot_main%': '',
     'node_use_node_snapshot%': 'false',
     'node_use_v8_platform%': 'true',
@@ -440,6 +441,15 @@
         'use_openssl_def%': 1,
       }, {
         'use_openssl_def%': 0,
+      }],
+      [ 'node_hook_child_process_fork==""', {
+        'node_hook_child_process_fork_args': [],
+      }, {
+        'node_hook_child_process_fork_args': [
+          '--custom-builtin',
+          'internal/hook/child_process_fork',
+          '<(node_hook_child_process_fork)',
+        ],
       }],
     ],
   },
@@ -992,6 +1002,7 @@
             'config.gypi',
             '<@(deps_files)',
             '<@(linked_module_files)',
+            '<@(node_hook_child_process_fork_args)',
           ],
         },
       ],

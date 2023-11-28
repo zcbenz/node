@@ -26,6 +26,9 @@ declare_args() {
     "deps/cjs-module-lexer/dist/lexer.js",
     "deps/undici/undici.js",
   ]
+
+  # Path to a script used as the hook of the child_process.fork API.
+  node_hook_child_process_fork = ""
 }
 
 # Equivalent of gyp file's configurations.

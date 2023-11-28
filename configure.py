@@ -732,6 +732,12 @@ parser.add_argument('--no-browser-globals',
          '(This mode is deprecated and not officially supported for regular ' +
          'applications)')
 
+parser.add_argument('--hook-child-process-fork',
+    dest='hook_child_process_fork',
+    default=None,
+    help='path to a script which will be bundled and used as a hook of the ' +
+         'child_process.fork API.')
+
 parser.add_argument('--without-inspector',
     action='store_true',
     dest='without_inspector',
@@ -1405,6 +1411,9 @@ def configure_node(o):
     o['variables']['debug_nghttp2'] = 'false'
 
   o['variables']['node_no_browser_globals'] = b(options.no_browser_globals)
+
+  if options.hook_child_process_fork:
+    o['variables']['node_hook_child_process_fork'] = options.hook_child_process_fork
 
   o['variables']['node_shared'] = b(options.shared)
   o['variables']['libdir'] = options.libdir

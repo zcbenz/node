@@ -95,6 +95,7 @@ bool FilenameIsConfigGypi(const std::string& path) {
 
 typedef std::vector<std::string> FileList;
 typedef std::map<std::string, FileList> FileMap;
+typedef std::map<std::string, std::string> CustomBuiltinsMap;
 
 bool SearchFiles(const std::string& dir,
                  FileMap* file_map,
@@ -533,11 +534,12 @@ Fragment GetDefinition(const std::string& var, const std::vector<char>& code) {
   }
 }
 
-int AddModule(const std::string& filename,
-              Fragments* definitions,
-              Fragments* initializers,
-              Fragments* registrations) {
-  Debug("AddModule %s start\n", filename.c_str());
+int AddModuleWithId(const std::string& file_id,
+                    const std::string& filename,
+                    Fragments* definitions,
+                    Fragments* initializers,
+                    Fragments* registrations) {
+  Debug("AddModuleWithId %s start\n", file_id.c_str());
 
   int error = 0;
   size_t file_size = GetFileSize(filename, &error);
@@ -548,7 +550,6 @@ int AddModule(const std::string& filename,
   if (error != 0) {
     return error;
   }
-  std::string file_id = GetFileId(filename);
   std::string var = GetVariableName(file_id);
 
   definitions->emplace_back(GetDefinition(var, code));
@@ -572,6 +573,14 @@ int AddModule(const std::string& filename,
                           var.c_str());
   reg_buf.resize(reg_size);
   return 0;
+}
+
+int AddModule(const std::string& filename,
+              Fragments* definitions,
+              Fragments* initializers,
+              Fragments* registrations) {
+  return AddModuleWithId(GetFileId(filename), filename, definitions,
+                         initializers, registrations);
 }
 
 std::vector<char> ReplaceAll(const std::vector<char>& data,
@@ -689,14 +698,17 @@ int AddGypi(const std::string& var,
 
 int JS2C(const FileList& js_files,
          const FileList& mjs_files,
+         const CustomBuiltinsMap& custom_builtins,
          const std::string& config,
          const std::string& dest) {
+  size_t js_files_size = js_files.size() + mjs_files.size() +
+                         custom_builtins.size();
   Fragments definitions;
-  definitions.reserve(js_files.size() + mjs_files.size() + 1);
+  definitions.reserve(js_files_size + 1);
   Fragments initializers;
-  initializers.reserve(js_files.size() + mjs_files.size());
+  initializers.reserve(js_files_size);
   Fragments registrations;
-  registrations.reserve(js_files.size() + mjs_files.size() + 1);
+  registrations.reserve(js_files_size + 1);
 
   for (const auto& filename : js_files) {
     int r = AddModule(filename, &definitions, &initializers, &registrations);
@@ -706,6 +718,13 @@ int JS2C(const FileList& js_files,
   }
   for (const auto& filename : mjs_files) {
     int r = AddModule(filename, &definitions, &initializers, &registrations);
+    if (r != 0) {
+      return r;
+    }
+  }
+  for (const auto& it : custom_builtins) {
+    int r = AddModuleWithId(it.first, it.second, &definitions, &initializers,
+                            &registrations);
     if (r != 0) {
       return r;
     }
@@ -738,6 +757,7 @@ int Main(int argc, char* argv[]) {
   std::vector<std::string> args;
   args.reserve(argc);
   std::string root_dir;
+  std::map<std::string, std::string> custom_builtins;
   for (int i = 1; i < argc; ++i) {
     std::string arg(argv[i]);
     if (arg == "--verbose") {
@@ -748,6 +768,13 @@ int Main(int argc, char* argv[]) {
         return 1;
       }
       root_dir = argv[++i];
+    } else if (arg == "--custom-builtin") {
+      if (i == argc - 2) {
+        fprintf(stderr, "--custom-builtin must be followed by id and path\n");
+        return 1;
+      }
+      custom_builtins[argv[i + 1]] = argv[i + 2];
+      i += 2;
     } else {
       args.emplace_back(argv[i]);
     }
@@ -808,7 +835,8 @@ int Main(int argc, char* argv[]) {
   std::sort(js_it->second.begin(), js_it->second.end());
   std::sort(mjs_it->second.begin(), mjs_it->second.end());
 
-  return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
+  return JS2C(js_it->second, mjs_it->second, custom_builtins,
+              gypi_it->second[0], output);
 }
 }  // namespace js2c
 }  // namespace node

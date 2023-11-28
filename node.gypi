@@ -139,6 +139,9 @@
     [ 'node_no_browser_globals=="true"', {
       'defines': [ 'NODE_NO_BROWSER_GLOBALS' ],
     } ],
+    [ 'node_hook_child_process_fork!=""', {
+      'defines': [ 'NODE_HOOK_CHILD_PROCESS_FORK' ],
+    } ],
     [ 'node_shared_zlib=="false"', {
       'dependencies': [ 'deps/zlib/zlib.gyp:zlib' ],
       'conditions': [

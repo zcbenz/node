@@ -1290,6 +1290,14 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
           .IsNothing())
     return;
 
+#if defined(NODE_HOOK_CHILD_PROCESS_FORK)
+  if (ret->Set(context,
+               FIXED_ONE_BYTE_STRING(env->isolate(), "hookChildProcessFork"),
+               Boolean::New(isolate, true))
+          .IsNothing())
+    return;
+#endif
+
   args.GetReturnValue().Set(ret);
 }
 
